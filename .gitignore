@@ -49,3 +49,6 @@ logs/
 # OS temp
 Thumbs.db
 desktop.ini
+
+.dev.vars*
+!.dev.vars.example
