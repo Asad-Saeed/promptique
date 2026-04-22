@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please skim the "Out of scope" section of [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) and the locked decisions in [docs/prompt-optimization.md](../blob/main/docs/prompt-optimization.md). Some things are intentionally deferred.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user-facing problem, not the feature. "I can't see my previous optimizations" is a problem; "add a history panel" is a solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should happen from the user's perspective? Sketch UI if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else could solve this? Why is your proposal the right one?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Does this fit the v1 scope?
+      description: See docs/prompt-optimization.md section 4.1 (in-scope) and 4.2 (out-of-scope).
+      options:
+        - "Yes, it's listed in section 4.1"
+        - "No, it's listed in 4.2 and I'm proposing to lift it"
+        - "Unclear — looking for guidance"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I've searched existing issues and this isn't a duplicate.
+          required: true
+        - label: This respects the hard constraints (zero cost, no framework, no user-facing telemetry, no embedded API key).
+          required: true

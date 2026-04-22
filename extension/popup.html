@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Promptique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body {
+      width: 360px;
+      height: 520px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .app { height: 100%; border-radius: 16px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>Promptique</h1>
+    </div>
+
+    <label class="label" for="userPrompt">Raw prompt</label>
+    <textarea id="userPrompt" class="textarea" placeholder="Paste your prompt here..." spellcheck="false" autofocus></textarea>
+
+    <div class="btn-row">
+      <button id="optimizeBtn" class="btn">Optimize</button>
+      <button id="clearBtn" class="btn btn-secondary" hidden>Clear</button>
+    </div>
+
+    <div id="errorBanner" class="error-banner" role="alert"></div>
+
+    <label class="label">Optimized</label>
+    <div id="result" class="result is-empty" aria-live="polite">
+      <div class="result-scroll"><span id="resultText">Your optimized prompt will appear here.</span></div>
+      <button id="copyBtn" class="icon-btn copy-btn" aria-label="Copy to clipboard" title="Copy" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <span id="copiedFlash" class="copied-flash">Copied</span>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

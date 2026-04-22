@@ -1,0 +1,51 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python (scripts/make-icons.py)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Node (future-proof — no deps today)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+wrangler.toml.local
+
+# Environment / secrets (should never exist — but belt-and-suspenders)
+.env
+.env.*
+!.env.example
+
+# Build artifacts / distribution
+*.zip
+*.crx
+*.pem
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# OS temp
+Thumbs.db
+desktop.ini

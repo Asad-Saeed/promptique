@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible problem with the extension, PWA, or proxy
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in as much as you can — a clear reproduction is the single most valuable thing here.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - Chrome Extension
+        - Desktop PWA
+        - Cloudflare Worker proxy
+        - Multiple / unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, short description of the bug.
+      placeholder: Clicking Optimize with a 9,000-character prompt returns "Network error" instead of a result.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps, starting from a clean state.
+      placeholder: |
+        1. Open the extension popup
+        2. Paste this prompt: "..."
+        3. Click Optimize
+        4. See error banner: "..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The prompt optimizes successfully, or I get a specific error explaining the limit.
+    validations:
+      required: true
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      placeholder: "131.0.6778.86"
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 14.6"
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console / network errors (if any)
+      description: DevTools → Console and Network panels. Redact anything sensitive.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I've reloaded the extension / refreshed the PWA and the bug still happens.
+          required: true
+        - label: I've searched existing issues and this isn't a duplicate.
+          required: true
+        - label: No secrets, API keys, or personal data are included in this report.
+          required: true

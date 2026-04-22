@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Promptique — Phase 1 test</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1A1A1A; }
+    h1 { font-size: 20px; }
+    p  { font-size: 13px; color: #6B6B6B; }
+    label { display: block; font-size: 12px; margin: 16px 0 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+    input, textarea { width: 100%; padding: 10px 12px; font: inherit; box-sizing: border-box; border: 1px solid #E8E3DB; border-radius: 8px; }
+    textarea { min-height: 140px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6; }
+    button { margin-top: 16px; padding: 10px 16px; font: inherit; cursor: pointer; background: #2D2D2D; color: #FAF7F2; border: 0; border-radius: 8px; }
+    button:disabled { background: #9A9A9A; cursor: wait; }
+    pre { background: #FFFFFF; border: 1px solid #E8E3DB; padding: 12px; white-space: pre-wrap; word-wrap: break-word; border-radius: 8px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6; }
+    .error { color: #B84A3E; }
+  </style>
+</head>
+<body>
+  <h1>Promptique — Phase 1 test harness</h1>
+  <p>Temporary scratch page. Serve the <code>Promptique</code> folder (e.g. <code>python3 -m http.server</code>) and open <code>/scratch/test.html</code> — opening via <code>file://</code> will fail because of ES module CORS.</p>
+
+  <label for="apiKey">Gemini API key</label>
+  <input id="apiKey" type="password" placeholder="Paste your key (stored only in this tab)" autocomplete="off" />
+
+  <label for="userPrompt">Raw prompt</label>
+  <textarea id="userPrompt" placeholder="Paste a raw prompt to optimize..."></textarea>
+
+  <button id="optimizeBtn">Optimize</button>
+
+  <label>Result</label>
+  <pre id="result">(awaiting output)</pre>
+
+  <script type="module">
+    import { optimizePrompt, PromptiqueError } from '../core/core.js';
+
+    const btn = document.getElementById('optimizeBtn');
+    const result = document.getElementById('result');
+
+    btn.addEventListener('click', async () => {
+      const key = document.getElementById('apiKey').value;
+      const input = document.getElementById('userPrompt').value;
+      result.className = '';
+      result.textContent = 'Loading...';
+      btn.disabled = true;
+      try {
+        const output = await optimizePrompt(input, key);
+        result.textContent = output;
+      } catch (err) {
+        result.className = 'error';
+        result.textContent = err instanceof PromptiqueError
+          ? `[${err.code}] ${err.message}`
+          : String(err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
