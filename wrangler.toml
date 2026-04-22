@@ -1,0 +1,11 @@
+# PWA deploy (Cloudflare Worker with static assets).
+# This config governs the `promptique` Worker that serves the desktop PWA from `./pwa`.
+# The Gemini proxy Worker (`promptique-proxy`) has its own config in proxy/wrangler.toml.
+# Auto-deploys on every push to `master` once Git integration is connected in the
+# Cloudflare dashboard.
+
+name = "promptique"
+compatibility_date = "2026-04-22"
+
+[assets]
+directory = "./pwa"
