@@ -13,7 +13,7 @@ Thanks for your interest. Promptique is intentionally small — vanilla HTML/CSS
 ## Dev workflow
 
 ```bash
-git clone https://github.com/Asad-Saeed/Promptique.git
+git clone https://github.com/Asad-Saeed/promptique.git
 cd promptique
 ```
 
@@ -32,7 +32,7 @@ cd promptique
    ```bash
    python3 scripts/make-icons.py
    ```
-6. **Proxy changes** live in `proxy/worker.js`. Test against a dev Worker before merging — see [`proxy/README.md`](proxy/README.md).
+6. **Proxy changes** live in `proxy/worker.js`. Test against a dev Worker before merging — see [`docs/prompt-optimization.md` §15 — Operations & Deployment](docs/prompt-optimization.md#15-operations--deployment).
 
 ## Submitting changes
 
@@ -60,6 +60,7 @@ If you want to propose lifting one of these, open an issue with the rationale be
 ## Bug reports and feature requests
 
 Use the issue templates in the **Issues** tab:
+
 - **Bug report** — include reproduction steps, expected vs actual behavior, and surface (extension / PWA).
 - **Feature request** — include the problem you're solving, not just the feature.
 

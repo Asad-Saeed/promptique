@@ -2,7 +2,7 @@
 // Holds the Gemini API key server-side so the extension + PWA don't ship it.
 // Deploy with `wrangler deploy` after setting the GEMINI_API_KEY secret.
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const MAX_INPUT_CHARS = 10000;
 
@@ -47,39 +47,43 @@ OPTIMIZED PROMPT:`;
 
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get('Origin') || '';
+    const origin = request.headers.get("Origin") || "";
     const cors = buildCors(origin, env);
 
-    if (request.method === 'OPTIONS') {
+    if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: cors });
     }
 
     const url = new URL(request.url);
-    if (url.pathname === '/health') {
+    if (url.pathname === "/health") {
       return json({ ok: true }, 200, cors);
     }
-    if (url.pathname !== '/optimize') {
-      return json({ error: 'Not found' }, 404, cors);
+    if (url.pathname !== "/optimize") {
+      return json({ error: "Not found" }, 404, cors);
     }
-    if (request.method !== 'POST') {
-      return json({ error: 'Method not allowed' }, 405, cors);
+    if (request.method !== "POST") {
+      return json({ error: "Method not allowed" }, 405, cors);
     }
     if (!isOriginAllowed(origin, env)) {
-      log(env, { event: 'origin_blocked', origin });
-      return json({ error: 'Origin not allowed' }, 403, cors);
+      log(env, { event: "origin_blocked", origin });
+      return json({ error: "Origin not allowed" }, 403, cors);
     }
 
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
     if (env.RATE_LIMITER) {
       try {
         const { success } = await env.RATE_LIMITER.limit({ key: ip });
         if (!success) {
-          log(env, { event: 'rate_limited', ip });
-          return json({ error: 'Rate limit reached — wait a minute.' }, 429, cors);
+          log(env, { event: "rate_limited", ip });
+          return json(
+            { error: "Rate limit reached — wait a minute." },
+            429,
+            cors,
+          );
         }
       } catch (err) {
-        log(env, { event: 'rate_limiter_error', message: String(err) });
+        log(env, { event: "rate_limiter_error", message: String(err) });
       }
     }
 
@@ -87,51 +91,82 @@ export default {
     try {
       body = await request.json();
     } catch {
-      return json({ error: 'Invalid JSON body' }, 400, cors);
+      return json({ error: "Invalid JSON body" }, 400, cors);
     }
 
-    const userInput = typeof body?.userInput === 'string' ? body.userInput.trim() : '';
+    const userInput =
+      typeof body?.userInput === "string" ? body.userInput.trim() : "";
     if (!userInput) {
-      return json({ error: 'userInput is required' }, 400, cors);
+      return json({ error: "userInput is required" }, 400, cors);
     }
     if (userInput.length > MAX_INPUT_CHARS) {
-      return json({ error: `Input exceeds ${MAX_INPUT_CHARS} characters.` }, 413, cors);
+      return json(
+        { error: `Input exceeds ${MAX_INPUT_CHARS} characters.` },
+        413,
+        cors,
+      );
     }
     if (!env.GEMINI_API_KEY) {
-      log(env, { event: 'missing_secret' });
-      return json({ error: 'Server misconfigured: missing API key.' }, 500, cors);
+      log(env, { event: "missing_secret" });
+      return json(
+        { error: "Server misconfigured: missing API key." },
+        500,
+        cors,
+      );
     }
 
     const geminiBody = {
-      contents: [{ parts: [{ text: META_PROMPT.replace('{USER_INPUT}', () => userInput) }] }],
+      contents: [
+        {
+          parts: [
+            { text: META_PROMPT.replace("{USER_INPUT}", () => userInput) },
+          ],
+        },
+      ],
       generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
     };
 
     const started = Date.now();
     let upstream;
     try {
-      upstream = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
-      });
+      upstream = await fetch(
+        `${GEMINI_ENDPOINT}?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiBody),
+        },
+      );
     } catch (err) {
-      log(env, { event: 'upstream_network_error', ip, message: String(err) });
-      return json({ error: 'Upstream network error.' }, 502, cors);
+      log(env, { event: "upstream_network_error", ip, message: String(err) });
+      return json({ error: "Upstream network error." }, 502, cors);
     }
 
     const latencyMs = Date.now() - started;
 
     if (upstream.status === 429) {
-      log(env, { event: 'upstream_rate_limit', ip, latencyMs });
-      return json({ error: 'Gemini rate limit reached — try again in a moment.' }, 429, cors);
+      log(env, { event: "upstream_rate_limit", ip, latencyMs });
+      return json(
+        { error: "Gemini rate limit reached — try again in a moment." },
+        429,
+        cors,
+      );
     }
     if (upstream.status === 503) {
-      log(env, { event: 'upstream_overloaded', ip, latencyMs });
-      return json({ error: 'Gemini is temporarily overloaded — try again in a moment.' }, 503, cors);
+      log(env, { event: "upstream_overloaded", ip, latencyMs });
+      return json(
+        { error: "Gemini is temporarily overloaded — try again in a moment." },
+        503,
+        cors,
+      );
     }
     if (!upstream.ok) {
-      log(env, { event: 'upstream_error', ip, status: upstream.status, latencyMs });
+      log(env, {
+        event: "upstream_error",
+        ip,
+        status: upstream.status,
+        latencyMs,
+      });
       return json({ error: `Upstream error (${upstream.status}).` }, 502, cors);
     }
 
@@ -139,24 +174,35 @@ export default {
     try {
       data = await upstream.json();
     } catch {
-      log(env, { event: 'upstream_bad_json', ip, latencyMs });
-      return json({ error: 'Invalid response from upstream.' }, 502, cors);
+      log(env, { event: "upstream_bad_json", ip, latencyMs });
+      return json({ error: "Invalid response from upstream." }, 502, cors);
     }
 
     const candidate = data?.candidates?.[0];
-    if (candidate?.finishReason === 'SAFETY') {
-      log(env, { event: 'safety_blocked', ip, latencyMs });
-      return json({ error: 'Gemini blocked this prompt for safety reasons.', code: 'SAFETY_BLOCKED' }, 400, cors);
+    if (candidate?.finishReason === "SAFETY") {
+      log(env, { event: "safety_blocked", ip, latencyMs });
+      return json(
+        {
+          error: "Gemini blocked this prompt for safety reasons.",
+          code: "SAFETY_BLOCKED",
+        },
+        400,
+        cors,
+      );
     }
 
     const text = candidate?.content?.parts?.[0]?.text;
     if (!text) {
-      log(env, { event: 'empty_response', ip, latencyMs });
-      return json({ error: 'Gemini returned an empty response.', code: 'EMPTY_RESPONSE' }, 502, cors);
+      log(env, { event: "empty_response", ip, latencyMs });
+      return json(
+        { error: "Gemini returned an empty response.", code: "EMPTY_RESPONSE" },
+        502,
+        cors,
+      );
     }
 
     log(env, {
-      event: 'ok',
+      event: "ok",
       ip,
       origin,
       inputLen: userInput.length,
@@ -169,38 +215,45 @@ export default {
 };
 
 function parseAllowlist(env) {
-  const raw = (env.ALLOWED_ORIGINS || '*').trim();
-  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const raw = (env.ALLOWED_ORIGINS || "*").trim();
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function isOriginAllowed(origin, env) {
   const list = parseAllowlist(env);
-  if (list.includes('*')) return true;
+  if (list.includes("*")) return true;
   if (!origin) return false;
   return list.includes(origin);
 }
 
 function buildCors(origin, env) {
   const list = parseAllowlist(env);
-  const permissive = list.includes('*');
-  const allow = permissive ? '*' : (origin && list.includes(origin) ? origin : 'null');
+  const permissive = list.includes("*");
+  const allow = permissive
+    ? "*"
+    : origin && list.includes(origin)
+      ? origin
+      : "null";
   return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '86400',
-    Vary: 'Origin',
+    "Access-Control-Allow-Origin": allow,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
 
 function json(body, status, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...extraHeaders, 'Content-Type': 'application/json' },
+    headers: { ...extraHeaders, "Content-Type": "application/json" },
   });
 }
 
 function log(env, payload) {
-  if (env.LOGGING === 'off') return;
+  if (env.LOGGING === "off") return;
   console.log(JSON.stringify({ t: new Date().toISOString(), ...payload }));
 }

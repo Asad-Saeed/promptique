@@ -6,19 +6,19 @@ Built with vanilla HTML/CSS/JavaScript, Cloudflare Workers, Google Gemini 2.5 Fl
 
 ## Tech Stack
 
-| Category | Technologies |
-|---|---|
-| **Frontend** | Vanilla HTML, CSS, JavaScript (ES modules) — no framework, no build step |
-| **Chrome Extension** | Manifest V3, Action API, host permissions |
-| **Desktop App** | Progressive Web App (Service Worker, Web App Manifest, installable) |
-| **Backend / Proxy** | Cloudflare Workers (Edge runtime), native Rate Limiting binding |
-| **LLM** | Google Gemini 2.5 Flash (free tier) |
-| **Prompt Engineering** | Custom meta-prompt built on RTF + CRISPE + CLEAR frameworks |
-| **Typography** | Fraunces (wordmark), Inter (UI), JetBrains Mono (prompt text) |
-| **Design System** | Ink & Paper theme — warm off-white surfaces, near-black ink accents |
-| **Icons** | Python + Pillow generator script (Ink & Paper serif monogram) |
-| **Hosting** | Cloudflare Workers (proxy) + Cloudflare Pages / GitHub Pages (PWA) |
-| **Distribution** | GitHub Releases (extension ZIP), chrome://extensions Load Unpacked |
+| Category               | Technologies                                                             |
+| ---------------------- | ------------------------------------------------------------------------ |
+| **Frontend**           | Vanilla HTML, CSS, JavaScript (ES modules) — no framework, no build step |
+| **Chrome Extension**   | Manifest V3, Action API, host permissions                                |
+| **Desktop App**        | Progressive Web App (Service Worker, Web App Manifest, installable)      |
+| **Backend / Proxy**    | Cloudflare Workers (Edge runtime), native Rate Limiting binding          |
+| **LLM**                | Google Gemini 2.5 Flash (free tier)                                      |
+| **Prompt Engineering** | Custom meta-prompt built on RTF + CRISPE + CLEAR frameworks              |
+| **Typography**         | Fraunces (wordmark), Inter (UI), JetBrains Mono (prompt text)            |
+| **Design System**      | Ink & Paper theme — warm off-white surfaces, near-black ink accents      |
+| **Icons**              | Python + Pillow generator script (Ink & Paper serif monogram)            |
+| **Hosting**            | Cloudflare Workers (proxy) + Cloudflare Pages / GitHub Pages (PWA)       |
+| **Distribution**       | GitHub Releases (extension ZIP), chrome://extensions Load Unpacked       |
 
 ## Key Features
 
@@ -52,7 +52,7 @@ Built with vanilla HTML/CSS/JavaScript, Cloudflare Workers, Google Gemini 2.5 Fl
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/Asad-Saeed/Promptique.git
+git clone https://github.com/Asad-Saeed/promptique.git
 cd promptique
 ```
 
@@ -144,14 +144,14 @@ promptique/
 
 ## Available Scripts
 
-| Command | Description |
-|---|---|
-| `./sync-core.sh` | Propagate `core/core.js` and `core/styles.css` into `extension/` and `pwa/` |
-| `python3 scripts/make-icons.py` | Regenerate Chrome extension + PWA PNG icons |
-| `python3 -m http.server 8000` | Serve the PWA locally at `http://localhost:8000/pwa/` |
-| `wrangler deploy` | Deploy the proxy Worker from the `proxy/` directory |
-| `wrangler secret put GEMINI_API_KEY` | Set or rotate the Gemini API key secret on the Worker |
-| `wrangler tail` | Stream structured request logs from the deployed Worker |
+| Command                              | Description                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------- |
+| `./sync-core.sh`                     | Propagate `core/core.js` and `core/styles.css` into `extension/` and `pwa/` |
+| `python3 scripts/make-icons.py`      | Regenerate Chrome extension + PWA PNG icons                                 |
+| `python3 -m http.server 8000`        | Serve the PWA locally at `http://localhost:8000/pwa/`                       |
+| `wrangler deploy`                    | Deploy the proxy Worker from the `proxy/` directory                         |
+| `wrangler secret put GEMINI_API_KEY` | Set or rotate the Gemini API key secret on the Worker                       |
+| `wrangler tail`                      | Stream structured request logs from the deployed Worker                     |
 
 ## Architecture
 
