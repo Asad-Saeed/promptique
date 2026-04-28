@@ -1,6 +1,4 @@
-// Cloudflare Worker: Promptique Gemini proxy.
-// Holds the Gemini API key server-side so the extension + PWA don't ship it.
-// Deploy with `wrangler deploy` after setting the GEMINI_API_KEY secret.
+// Cloudflare Worker — proxies clients to Gemini, holds the shared API key.
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;

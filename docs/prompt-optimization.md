@@ -79,7 +79,18 @@ These rules MUST be followed in every decision:
 - Analytics / telemetry
 - Any monetization, paywall, or license-key logic
 
-### 4.3 Non-functional requirements
+### 4.3 v2 — BYOK fallback (opt-in, see section 16 for full design)
+
+| ID   | Requirement                                                                                                          |
+| ---- | -------------------------------------------------------------------------------------------------------------------- |
+| F-10 | User can open a settings panel from a gear icon in the header to manage their own Gemini API key                     |
+| F-11 | User can paste, save, and clear a personal Gemini API key. Key is stored only on the local device                    |
+| F-12 | When a personal key is saved, the client calls the Gemini API directly (bypasses the shared proxy)                   |
+| F-13 | After 2 consecutive recoverable errors via the shared proxy, a modal offers the user the option to add their own key |
+| F-14 | A "Using your key" status indicator is visible in the header whenever BYOK mode is active                            |
+| F-15 | The shared-key flow remains the default — no setup is required for first use; BYOK is strictly opt-in                |
+
+### 4.4 Non-functional requirements
 
 - **Performance:** UI responsive; round-trip (client → proxy → Gemini → client) typically under 3 seconds
 - **Bundle size:** Extension total size under 500 KB
@@ -211,7 +222,9 @@ promptique/
 ├── docs/
 │   └── prompt-optimization.md    # this file — spec + ops reference
 ├── core/
-│   ├── core.js                   # shared: proxy client + error types
+│   ├── core.js                   # shared: proxy + direct-Gemini client + error types
+│   ├── userKey.js                # shared: BYOK storage adapter (chrome.storage / localStorage)
+│   ├── settings.js               # shared: BYOK settings modal + key pill controller
 │   └── styles.css                # shared Ink & Paper styles
 ├── proxy/
 │   ├── worker.js                 # Cloudflare Worker: holds key + meta-prompt
@@ -219,16 +232,20 @@ promptique/
 ├── extension/
 │   ├── manifest.json             # Manifest V3
 │   ├── popup.html                # extension popup
-│   ├── popup.js                  # popup logic (imports core)
+│   ├── popup.js                  # popup logic (imports core + settings)
 │   ├── core.js                   # synced from core/
+│   ├── userKey.js                # synced from core/
+│   ├── settings.js               # synced from core/
 │   ├── styles.css                # synced from core/
 │   └── icons/                    # 16 / 32 / 48 / 128 px PNG icons
 ├── pwa/
 │   ├── index.html                # main PWA page
-│   ├── app.js                    # PWA logic (imports core)
+│   ├── app.js                    # PWA logic (imports core + settings)
 │   ├── manifest.webmanifest      # PWA manifest
 │   ├── service-worker.js         # for offline + "install app" support
 │   ├── core.js                   # synced from core/
+│   ├── userKey.js                # synced from core/
+│   ├── settings.js               # synced from core/
 │   ├── styles.css                # synced from core/
 │   └── icons/                    # 192 / 512 px PNG icons + favicon
 └── scripts/
@@ -331,7 +348,7 @@ When resuming this project in a future session, follow these rules:
 4. **Do not add frameworks** (React, Tailwind build step, TypeScript build step, bundlers). Vanilla HTML/CSS/JS only.
 5. **Do not add user-facing analytics or tracking.** Proxy metadata logs (no content) are allowed and documented.
 6. **Never commit the Gemini API key.** It lives only as a Worker secret. Never hardcode, never add to `wrangler.toml`, never put in client bundles.
-7. **Do not reintroduce a bring-your-own-key flow** unless explicitly asked. No settings page for API keys in the extension/PWA.
+7. **BYOK fallback is opt-in only** (added in v2 — see section 16). The shared proxy stays the default flow; never require a user-supplied key for first use; never store a user-supplied key anywhere except local device storage; never log or transmit a user-supplied key through the proxy.
 8. **Prefer editing existing files** over creating new ones. This spec + the file structure in section 7 are the skeleton — stick to them.
 9. **Ship v1 before polishing.** Working ugly beats polished broken.
 10. **Ask before changing locked decisions** in section 3.
@@ -348,9 +365,12 @@ When resuming this project in a future session, follow these rules:
 - [x] ~~GitHub username~~ → `Asad-Saeed`
 - [x] ~~Icon design~~ → bold serif "P" + ink-dot accent on rounded paper square; generated via `scripts/make-icons.py`
 - [x] ~~Private or public GitHub repo~~ → **public, MIT licensed, open source**
-- [ ] PWA URL (once Cloudflare Pages deploy finishes — expected `https://promptique.pages.dev`)
+- [x] ~~PWA URL~~ → `https://promptique.asadsaeed-dev.workers.dev` (CF Worker with static assets, auto-deploys on push to `master` via root `wrangler.toml`)
 - [ ] Final meta-prompt wording (tune in `proxy/worker.js` based on real-world output quality)
-- [ ] Lock down `ALLOWED_ORIGINS` once the extension is published (need stable Chrome Web Store ID) and the PWA URL is finalized
+- [ ] Lock down `ALLOWED_ORIGINS` once the extension is published (need stable Chrome Web Store ID)
+- [x] ~~**v2 BYOK fallback (section 16)**~~ → shipped in v0.3.0; client-side direct-Gemini path, settings modal, error-triggered modal, "Using your key" pill all live
+- [x] ~~Decide whether to mirror the meta-prompt into `core/core.js`~~ → mirrored verbatim from `proxy/worker.js` (see §16.5); meta-prompt is now visible in client bundles by design
+- [ ] Lock down `ALLOWED_ORIGINS` to a specific list once the extension has a stable Chrome Web Store ID
 
 ---
 
@@ -701,4 +721,114 @@ Produces Chrome extension icons (`16`, `32`, `48`, `128` px) and PWA icons (`192
 
 ---
 
-_Last updated: 2026-04-22 — migrated from BYOK to shared-key Cloudflare Worker proxy; rolled `proxy/README.md` into section 15; added Fraunces wordmark, PNG icon generator, Clear button, scrollable result, 16px popup corners, public/MIT release notes._
+## 16. v2 — BYOK Fallback (Opt-in User Key)
+
+Promptique v2 introduces an **optional, client-side bring-your-own-key (BYOK) fallback**. The default flow is unchanged — every user hits the shared proxy with no setup. BYOK is offered after the shared path returns an error the user can recover from by supplying their own free Gemini key (rate limit, upstream overload, daily quota exhaustion). When a user saves a personal key, the client switches to **direct Gemini API calls** for the rest of the session.
+
+### 16.1 Goals
+
+- Keep the zero-setup, zero-cost default experience for every new user.
+- Give power users (and our team during Gemini incidents) a clean escape hatch when the shared proxy is rate-limited, the global Gemini key is exhausted, or upstream is overloaded.
+- Never make BYOK a requirement, never gate features behind it, never make it visible to users who don't hit a recoverable error.
+
+### 16.2 Non-goals
+
+- No user accounts, server-side key storage, or sync across devices.
+- No prompt history, no saved-key sharing, no team-key management.
+- No fallback for non-recoverable errors (validation, safety blocks, network offline) — those are not solved by adding a key.
+- No mechanism for the proxy to forward a user-supplied key — the user's key never touches our infrastructure.
+
+### 16.3 When the fallback is offered (trigger logic)
+
+The client tracks consecutive **recoverable** errors. After **2 in a row**, a modal opens automatically inviting the user to add their own key.
+
+| Error class                     | Recoverable? | Notes                                                     |
+| ------------------------------- | ------------ | --------------------------------------------------------- |
+| `RATE_LIMIT` (proxy per-IP)     | Yes          | The shared proxy throttled this client                    |
+| `RATE_LIMIT` (Gemini upstream)  | Yes          | Free-tier 15 req/min hit globally                         |
+| `PROXY_ERROR` (5xx)             | Yes          | Upstream / Worker failure                                 |
+| `BAD_RESPONSE` (Gemini 503)     | Yes          | Surfaced as "Gemini is temporarily overloaded"            |
+| `EMPTY_RESPONSE` (likely quota) | Yes          | Often signals daily quota exhaustion                      |
+| `EMPTY_INPUT` / `TOO_LONG`      | No           | User input issue — modal would be misleading              |
+| `SAFETY_BLOCKED`                | No           | Gemini's safety classifier; another key won't change this |
+| `NETWORK`                       | No           | Browser is offline — adding a key doesn't help            |
+
+Counter resets on the next successful request. The user can also dismiss the modal ("Try again later"), in which case the counter resets and the modal won't reappear until 2 more consecutive recoverable errors occur.
+
+### 16.4 Storage & lifecycle of the user key
+
+- **Extension:** `chrome.storage.local` under key `promptique:userKey`. Survives extension reload; cleared with extension uninstall or explicit "Clear key" action.
+- **PWA:** `localStorage` under key `promptique:userKey`. Origin-scoped; cleared by site-data clear or explicit "Clear key" action.
+- **Never** synced, never sent to the proxy, never logged anywhere.
+- A thin `core/userKey.js` adapter abstracts the storage difference so `core.js` stays surface-agnostic.
+
+### 16.5 Direct-Gemini code path
+
+When a saved user key is present, `optimizePrompt(userInput)` skips the proxy and calls `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=<userKey>` directly with the same meta-prompt the proxy uses.
+
+**Implication: the meta-prompt becomes visible in client bundles.** This is the explicit tradeoff for keeping the user's key off our infrastructure. The meta-prompt was never a trade secret — it's documented verbatim in section 5.2 — so this is acceptable.
+
+The direct path reuses the same response parsing, the same `PromptiqueError` codes, and the same input cap (10 000 chars). One new error code is added: `INVALID_USER_KEY` for Gemini 400/403 responses indicating an unauthenticated/forbidden key.
+
+### 16.6 UI surface
+
+- **Header gear icon** (extension + PWA): opens the settings panel manually at any time. Same icon set as existing UI (no decorative additions per the Ink & Paper principles).
+- **Settings panel** — a centered modal overlay (same component on the extension and PWA, injected into the body by `core/settings.js` on init) containing:
+  - One-line explainer ("Use your own free Gemini key — stored only on this device.")
+  - Inline link: "Get a free key → aistudio.google.com/apikey"
+  - Password-style input (`type=password`, paste-friendly, no autocomplete)
+  - **Save**, **Clear**, **Close** buttons
+  - Privacy note: "Your key never leaves this device. Promptique's server never sees it."
+- **Status indicator** — when a key is saved, a small "Using your key" pill appears next to the wordmark in the header (`#4A7C59` tint per the design system, no emoji).
+- **Auto-trigger modal** — same component as the settings panel, just opened automatically with an extra explanatory line at the top: "Our shared key is busy. Add your own free Gemini key to keep going."
+
+### 16.7 Privacy & security
+
+- The key is treated like a password in the UI: input type `password`, never echoed in the result box, never logged client-side.
+- The user's key is never sent through the Cloudflare Worker — the direct path bypasses our infrastructure entirely.
+- The proxy continues to log metadata only (no content); the BYOK flow doesn't touch the proxy at all, so it produces no proxy logs.
+- The Gemini API itself may log requests under the user's account — this is Google's behavior and is documented in the privacy section of the README.
+
+### 16.8 Phase plan (v2 implementation)
+
+This v2 work is broken into 5 phases. After each phase, cross-verify the change works end-to-end on both surfaces before moving to the next.
+
+**Phase 1 — Spec & docs (this commit).** Update `docs/prompt-optimization.md` (this section, §4.3, §10.7, §11) and `README.md` to describe the v2 BYOK fallback. No code changes.
+
+**Phase 2 — Core BYOK plumbing (no UI).**
+
+- Add `core/userKey.js` storage adapter (chrome.storage.local vs localStorage detection).
+- Add `META_PROMPT` constant to `core/core.js` for the direct-Gemini path (mirrors `proxy/worker.js`).
+- Add `optimizePromptDirect(userInput, userKey)` calling Gemini directly.
+- Update `optimizePrompt(userInput)` to choose path based on saved key.
+- Add `RECOVERABLE_ERROR_CODES` set + counter helpers.
+- Add `INVALID_USER_KEY` error code to `PromptiqueError`.
+- Run `./sync-core.sh`. Verify by manually saving a key in DevTools and confirming both paths work.
+
+**Phase 3 — Settings UI (manual access).**
+
+- Header gear icon in `extension/popup.html` and `pwa/index.html`.
+- Settings modal/panel markup + styles (Ink & Paper compliant).
+- Wire Save / Clear / Close to `userKey.js`.
+- "Using your key" status pill in header when active.
+- Test: open settings → save key → see pill → clear → pill disappears.
+
+**Phase 4 — Error-triggered fallback prompt.**
+
+- After 2 consecutive recoverable errors via the proxy path, auto-open the settings modal with the prefix copy from §16.6.
+- "Try again later" button dismisses + resets counter.
+- Successful request resets counter.
+- Test: simulate rate-limit responses (mock proxy URL or set rate limit to 0) and confirm the modal opens on the second error, not the first.
+
+**Phase 5 — Polish + release.**
+
+- Test invalid-key error mapping (paste a bad key → confirm `INVALID_USER_KEY` surfaces a clear message).
+- Bump `extension/manifest.json` version to `0.3.0`.
+- Update README screenshots if visuals changed materially.
+- Tag `v0.3.0`, build extension ZIP, attach to GitHub release.
+
+Each phase ends with a working build on both surfaces; v2 can ship after Phase 4 even if Phase 5 polish lands later.
+
+---
+
+_Last updated: 2026-04-28 — v0.3.0 ships the v2 BYOK fallback: `core/userKey.js`, `core/settings.js`, direct-Gemini path, settings modal, "Using your key" pill, auto-trigger after 2 consecutive recoverable proxy errors. Manifest bumped to 0.3.0; added `storage` permission and `generativelanguage.googleapis.com` host. §7 file structure refreshed; §11 BYOK + meta-prompt-in-bundle items closed._

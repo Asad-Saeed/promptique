@@ -39,6 +39,7 @@ Built with vanilla HTML/CSS/JavaScript, Cloudflare Workers, Google Gemini 2.5 Fl
 - Ink & Paper design language — one accent color, one shadow, minimal icon set, no gradients or emojis
 - Programmatically generated PNG icons (16 / 32 / 48 / 128 for extension, 192 / 512 for PWA) via a Python + Pillow script
 - Runs entirely on free tiers — Cloudflare Workers (100k req/day) + Gemini free tier (15 req/min)
+- **v2 (in progress) — opt-in BYOK fallback:** when the shared key is rate-limited or upstream is overloaded, a modal offers the user the option to paste their own free Gemini key. The key stays only on the local device and never touches the Promptique proxy. See [`docs/prompt-optimization.md` §16](docs/prompt-optimization.md#16-v2--byok-fallback-opt-in-user-key) for the full design.
 
 ## Getting Started
 
@@ -114,21 +115,27 @@ python3 scripts/make-icons.py
 ```
 promptique/
 ├── core/
-│   ├── core.js                    # Proxy client + PromptiqueError (single source of truth)
+│   ├── core.js                    # Proxy + direct-Gemini client, errors, recoverable counter
+│   ├── userKey.js                 # BYOK storage adapter (chrome.storage / localStorage)
+│   ├── settings.js                # BYOK settings modal + "Using your key" pill controller
 │   └── styles.css                 # Ink & Paper shared styles
 ├── extension/
 │   ├── manifest.json              # Manifest V3
 │   ├── popup.html                 # Extension popup shell
-│   ├── popup.js                   # Popup logic (imports core)
+│   ├── popup.js                   # Popup logic (imports core + settings)
 │   ├── core.js                    # Synced from core/
+│   ├── userKey.js                 # Synced from core/
+│   ├── settings.js                # Synced from core/
 │   ├── styles.css                 # Synced from core/
 │   └── icons/                     # 16 / 32 / 48 / 128 px PNG icons
 ├── pwa/
 │   ├── index.html                 # PWA shell
-│   ├── app.js                     # PWA logic (imports core)
+│   ├── app.js                     # PWA logic (imports core + settings)
 │   ├── manifest.webmanifest       # PWA manifest
 │   ├── service-worker.js          # Offline shell + install support
 │   ├── core.js                    # Synced from core/
+│   ├── userKey.js                 # Synced from core/
+│   ├── settings.js                # Synced from core/
 │   ├── styles.css                 # Synced from core/
 │   └── icons/                     # 192 / 512 px PNG icons + favicon
 ├── proxy/
@@ -182,12 +189,17 @@ promptique/
 
 Full requirements, design decisions, and AI-assistant working rules live in [`docs/prompt-optimization.md`](docs/prompt-optimization.md).
 
+## Roadmap
+
+**v0.3 (in progress) — Opt-in BYOK fallback.** When the shared proxy is rate-limited, overloaded, or out of daily Gemini quota, a small modal offers the user the option to paste their own free Gemini API key. Saving a key switches that device to a direct-Gemini code path; the key is stored locally (`chrome.storage.local` for the extension, `localStorage` for the PWA) and never transits the Promptique proxy. The default zero-setup flow stays unchanged for everyone who never hits a recoverable error. Full design + 5-phase rollout plan lives in [`docs/prompt-optimization.md` §16](docs/prompt-optimization.md#16-v2--byok-fallback-opt-in-user-key).
+
 ## Privacy
 
 - No accounts, no signup, no client-side telemetry.
 - The Worker proxy logs request **metadata only** (timestamp, IP, origin, input/output length, HTTP status, latency). Prompt and response content are never logged.
 - To disable logging entirely, set `LOGGING = "off"` on the Worker and redeploy.
-- The Gemini API key lives only as a Cloudflare Worker secret — never in source, commits, or client bundles.
+- The shared Gemini API key lives only as a Cloudflare Worker secret — never in source, commits, or client bundles.
+- **v2 BYOK (when enabled):** a user-supplied key is stored only on the local device and is sent directly to `generativelanguage.googleapis.com` — it never passes through the Promptique proxy and is never logged anywhere by Promptique. The Gemini API itself may log requests under the user's own Google account; that's Google's behavior, not Promptique's.
 
 ## Developed By
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Promptique",
-  "version": "0.2.0",
-  "description": "Paste a raw prompt, get an optimized version back.",
+  "version": "0.3.0",
+  "description": "Paste a raw prompt, get an optimized version back. Optional: bring your own free Gemini key.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Promptique",
@@ -19,5 +19,9 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "host_permissions": ["https://promptique-proxy.asadsaeed-dev.workers.dev/*"]
+  "host_permissions": [
+    "https://promptique-proxy.asadsaeed-dev.workers.dev/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "permissions": ["storage"]
 }

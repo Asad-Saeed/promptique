@@ -17,7 +17,7 @@ git clone https://github.com/Asad-Saeed/promptique.git
 cd promptique
 ```
 
-1. **Edit shared client code in `core/`.** Never edit `extension/core.js`, `pwa/core.js`, `extension/styles.css`, or `pwa/styles.css` directly — they are generated.
+1. **Edit shared client code in `core/`.** Never edit the generated copies in `extension/` or `pwa/` directly — `core.js`, `userKey.js`, `settings.js`, and `styles.css` are all synced from `core/`.
 2. **After editing `core/`**, run:
    ```bash
    ./sync-core.sh

@@ -1,4 +1,15 @@
-import { optimizePrompt, PromptiqueError } from "./core.js";
+import {
+  optimizePrompt,
+  PromptiqueError,
+  getConsecutiveRecoverableErrors,
+  resetRecoverableErrorCounter,
+} from "./core.js";
+import { hasUserKey } from "./userKey.js";
+import { initSettings, openSettings, refreshKeyStatus } from "./settings.js";
+
+const FALLBACK_TRIGGER_THRESHOLD = 2;
+const FALLBACK_PREFIX =
+  "Our shared key is busy. Add your own free Gemini key to keep going.";
 
 const els = {
   input: document.getElementById("userPrompt"),
@@ -9,6 +20,7 @@ const els = {
   copiedFlash: document.getElementById("copiedFlash"),
   error: document.getElementById("errorBanner"),
   clearBtn: document.getElementById("clearBtn"),
+  settingsBtn: document.getElementById("settingsBtn"),
 };
 
 const EMPTY_TEXT = "Your optimized prompt will appear here.";
@@ -66,7 +78,16 @@ async function handleOptimize() {
     showError(msg);
   } finally {
     setLoading(false);
+    await refreshKeyStatus();
+    await maybeAutoOpenSettings();
   }
+}
+
+async function maybeAutoOpenSettings() {
+  if (getConsecutiveRecoverableErrors() < FALLBACK_TRIGGER_THRESHOLD) return;
+  if (await hasUserKey()) return;
+  resetRecoverableErrorCounter();
+  openSettings(FALLBACK_PREFIX);
 }
 
 async function handleCopy() {
@@ -90,6 +111,7 @@ function handleClear() {
 els.btn.addEventListener("click", handleOptimize);
 els.copyBtn.addEventListener("click", handleCopy);
 els.clearBtn.addEventListener("click", handleClear);
+els.settingsBtn.addEventListener("click", () => openSettings());
 els.input.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
     e.preventDefault();
@@ -97,3 +119,5 @@ els.input.addEventListener("keydown", (e) => {
   }
 });
 els.input.addEventListener("input", clearError);
+
+initSettings();
